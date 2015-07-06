@@ -4,19 +4,22 @@
 ---
 <a name="Overview"></a>
 ## Overview ##
-In this HOL
+In this HOL, you will create a Mobile, Logic, API and Web App as part of an integrated solution.  The Mobile App will connect to a SQL Database instance and store Todo items in the database.  The Logic App will poll the database for new records and start a workflow instance for each new table record.  The API App will be used in the Logic App to store workflow data to an DocumentDB instance.  Finally, the Web App will host a WebJob that asynchronously notifies you when a workflow has finished processing data.
 
 <a name="Objectives"></a>
 ### Objectives ###
--
+- Create a Logic App workflow using both API Apps and built-in connectors
+- Create a Mobile App instance and integrate the service with a Windows Store application
+- Create a custom API App instance and use it in a Logic App
+- Create a WebJob hosted in a Web App instance.
 
 <a name="technologies"></a>
 ### Prerequisites ###
 
-- Microsoft Azure subscription [Create a Microsoft Azure account and enable preview features][1]
-- [Visual Studio 2013 Community Edition](http://www.microsoft.com/visualstudio)
-
-[1]: http://www.windowsazure.com/en-us/develop/mobile/tutorials/create-a-windows-azure-account/
+- Microsoft Azure subscription [Create a Microsoft Azure account and enable preview features](http://www.windowsazure.com/en-us/develop/mobile/tutorials/create-a-windows-azure-account/)
+- [Azure SDK 2.6](http://azure.microsoft.com/en-us/downloads/)
+- [Visual Studio 2015 Community Edition](http://www.microsoft.com/visualstudio)
+  > You must have a release or RTM version of Visual Studio 2015.  Visual Studio 2015 RC does not currently support creating template API Apps.
 
 <a name="Exercises"></a>
 ## Exercises ##
@@ -32,26 +35,25 @@ This hands-on lab includes the following exercises:
 <a name="Exercise1"></a>
 ## Exercise 1: Creating your Mobile App ##
 
-In this exercise, you will create a mobile service using the TodoItem template.
-
+In this exercise, you will create a mobile service and application using the TodoItem template.
 
 1. Log into the [Microsoft Azure Management Portal](https://portal.azure.com) and navigate to Mobile Services.
 
-1. In the top left of the window, click **+NEW**. Scroll until you see the **Mobile App** item.
+1. In the top left of the window, click **+NEW**. Click the **Web + Mobile** option and click the **Mobile App** item.
 
    ![](./images/new-mobile-app.png)
 
-   This displays the **New Mobile App** blade.
+2. Type a unique **Name** for your Mobile App..
 
-2. Type a name for your Mobile App. It must be at least 8 characters long and lowercase a to z.
-
-7. Select a region. In this tutorial, we use **South Central US**.
+7. Select any **Location**. In this tutorial, we used **South Central US**.
 
 3. Select your subscription.
 
 6. Create a new App Service Plan with the name **EndToEnd** for your App Service apps.  Ensure that the App Service Plan is at the **S1 Standard** pricing tier.
 
 4. Create a new resource group with the name **EndToEnd** for your App Service apps.
+
+  > You must create a new App Service Plan in order to have the option to create a new resource group.  Please ensure that you create a new plan and resource group that are unique for this lab.  This lab will assume that you use the name **EndToEnd** for both your plan and group.
 
 5. In **Package Settings**, select **USERDATABASE**, you can choose an existing database or create a new one. For creating a new database, type the name of the new **database**, create a new **server**, type the name of that server, then choose a **login name**, which is the administrator login name for the new SQL Database server, type and confirm the password, and click the ok button to complete the process. If selecting an existing database, you will need to provide a **Server Administrator Password**.
 
@@ -87,20 +89,19 @@ In this exercise, you will create a mobile service using the TodoItem template.
 
 3. Open the **DataObjects/TodoItem** file.
 
-4. Replace the contents of the **TodoItem** file with the below code.
+4. Within the existing namespace, replace the entire **TodoItem** class with the following code:
+
+  > It is important that you keep the namespace intact as the namespace will vary if you used a different name for your project.
 
         using Microsoft.Azure.Mobile.Server;
 
-        namespace ExampleAPpService.DataObjects
+        public class TodoItem : EntityData
         {
-            public class TodoItem : EntityData
-            {
-                public string Text { get; set; }
+            public string Text { get; set; }
 
-                public bool Complete { get; set; }
+            public bool Complete { get; set; }
 
-                public bool Processed { get; set; }
-            }
+            public bool Processed { get; set; }
         }
 
 3. Right-click the project in the solution and click the **Publish** option.
@@ -211,7 +212,7 @@ In this exercise you will create a DocumentDB instance and an API App instance. 
 
 6. Navigate to the **source** folder for this lab and add both the **TodoItem.cs** and **DocDbRepository.cs** files.
 
-7. Open the **Web.config** file of your application and add the following lines under the <AppSettings> section.
+7. Open the **Web.config** file of your application and add the following lines within the **<appSettings>** XML element.
 
         <add key="endpoint" value="enter the URI from the Keys blade of the Azure Preview portal"/>
         <add key="authKey" value="enter the PRIMARY KEY, or the SECONDARY KEY, from the Keys blade of the Azure  Preview portal"/>
@@ -234,22 +235,21 @@ In this exercise you will create a DocumentDB instance and an API App instance. 
 
 	![](./images/07-new-controller-name-v2.png)
 
-8. Once the **ItemsController.cs** file has been created, replace the entire contents of the file with the following code.
+8. Within the existing namespace, replace the entire **ItemsController** class with the following code:
+
+  > It is important that you keep the namespace intact as the namespace will vary if you used a different name for your project.
 
         using System.Threading.Tasks;
         using System.Web.Http;
 
-        namespace WebApplication3.Controllers
+        public class ItemsController : ApiController
         {
-            public class ItemsController : ApiController
+            [HttpPost]
+            public async Task<IHttpActionResult> Post(Models.TodoItem item)
             {
-                [HttpPost]
-                public async Task<IHttpActionResult> Post(Models.TodoItem item)
-                {
-                    var document = await DocumentDB.Repository<Models.TodoItem>.CreateItemAsync(item);
+                var document = await DocumentDB.Repository<Models.TodoItem>.CreateItemAsync(item);
 
-                    return Ok(document.Id);
-                }
+                return Ok(document.Id);
             }
         }
 
@@ -315,7 +315,7 @@ In this exercise, you will create a service bus queue, api app connectors and a 
 
 5. Record the connection string to use in later steps.
 6. Return to the [Azure Management Portal](https://portal.azure.com).
-1. In the Azure portal, locate the jumbar, click **Browse**, then click **Mobile App** and then locate your exising Mobile App created in the previous exercises.
+1. In the Azure portal, locate the jumpbar, click **Browse**, then click **Mobile App** and then locate your exising Mobile App created in the previous exercises.
 2. In the Mobile App blade, record the name of your Mobile App instance.
 1. Locate the jumbar, click **Browse**, then click **SQL Database** and then locate your existing SQL database created with your Mobile App.
 2. In the SQL database blade, record the name of your SQL Database instance.
@@ -343,7 +343,8 @@ Poll Data Query | ```SELECT * FROM [NameOfYourMobileApp].[TodoItems] 	WHERE Proc
 
   ![](./images/createsqlconnector.png)
 
-1. In the Azure startboard, select **Marketplace**.
+1. Click **Create** to create the SQL Connector API App instance.
+2. In the Azure startboard, select **Marketplace**.
 2. Select **API Apps** and search for **Azure Service Bus connector**.
 3. Enter a unique Name.
 4. For the App Service Plan select the existing **EndToEnd** plan.
@@ -356,9 +357,10 @@ Entity Name | Enter the value **todo** (the name of your queue).
 
   ![](./images/createsbconnector.png)
 
+1. Click **Create** to create the Service Bus Connector API App instance.
 1. Click on the **+ New** button at the top left of the portal, expand **Web + Mobile**, then click **Logic App**.
 
- 	This displays the Create logic app view, where you provide some basic settings to get started.
+ 	> This displays the Create logic app view, where you provide some basic settings to get started.
 
 	![Create logic app view](./images/createlogicapp.png)
 
@@ -512,7 +514,7 @@ In this exercise, you will sign up for a Twilio trial account, create an Azure S
 
 14. Open the **Functions.cs** file.
 
-15. Replace the entire class with the following code:
+15. Within the existing namespace, replace the entire **Functions** class with the following code:
 
   > It is important that you keep the namespace intact as the namespace will vary if you used a different name for your project.
 
@@ -525,7 +527,7 @@ In this exercise, you will sign up for a Twilio trial account, create an Azure S
             static string AccountSid = "--AccountSID--";
             static string AuthToken = "--AuthenticationToken--";
             static string FromNumber = "+15551234567";
-          static   string ToNumber = "+15559876543";
+            static string ToNumber = "+15559876543";
         }
 
 16. Replace the **FromNumber** variable's value with the number from your Twilio account recorded earlier in this exercise.  Make sure you precede this number with the appropriate country extension (Example: in the US you would prefix with *+1*).
